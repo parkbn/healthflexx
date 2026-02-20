@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "google-calendar": {
+      "command": "node",
+      "args": ["mcp-servers/google-calendar/build/index.js"],
+      "env": {
+        "GOOGLE_CLIENT_ID": "${GOOGLE_CLIENT_ID}",
+        "GOOGLE_CLIENT_SECRET": "${GOOGLE_CLIENT_SECRET}"
+      }
+    }
+  }
+}
