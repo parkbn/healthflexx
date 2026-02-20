@@ -28,21 +28,19 @@ A local MCP server (stdio transport) that provides Google Calendar tools to Clau
 - `list_todays_events` — Fetch all events for today (primary use for `/morning`)
 - `list_events` — Fetch events in a date range
 - `search_events` — Search events by keyword
-- `create_event` — Create a new calendar event
 
 **Setup:**
 
-1. Create a Google Cloud project with the Calendar API enabled
-2. Create OAuth2 credentials (Desktop app type) and note the client ID and secret
-3. Set environment variables:
+1. Get your private iCal URL from Google Calendar:
+   - Go to calendar.google.com → Settings → click your calendar → Integrate calendar
+   - Copy the **Secret address in iCal format**
+2. Set the environment variable:
    ```
-   export GOOGLE_CLIENT_ID="your-client-id"
-   export GOOGLE_CLIENT_SECRET="your-client-secret"
+   export GOOGLE_CALENDAR_ICAL_URL="your-secret-ical-url"
    ```
-4. Build the server:
+3. Build the server:
    ```
    cd mcp-servers/google-calendar && npm install && npm run build
    ```
-5. On first use, the server will open a browser window for Google OAuth consent. Tokens are saved to `~/.healthflexx/tokens.json`.
 
 **Registration:** The server is registered in `.mcp.json` at the project root and will be available to Claude Code automatically.

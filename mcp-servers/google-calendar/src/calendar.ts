@@ -1,143 +1,111 @@
-import { google, calendar_v3 } from "googleapis";
-import { OAuth2Client } from "google-auth-library";
-
-function getCalendarClient(auth: OAuth2Client): calendar_v3.Calendar {
-  return google.calendar({ version: "v3", auth });
-}
+import ical, { VEvent } from "node-ical";
 
 export interface CalendarEvent {
-  id: string | null | undefined;
-  summary: string | null | undefined;
-  description: string | null | undefined;
-  start: string | null | undefined;
-  end: string | null | undefined;
-  location: string | null | undefined;
-  status: string | null | undefined;
-  htmlLink: string | null | undefined;
-  attendees: { email: string; responseStatus?: string }[];
+  summary: string;
+  description: string;
+  start: string;
+  end: string;
+  location: string;
 }
 
-function formatEvent(event: calendar_v3.Schema$Event): CalendarEvent {
+function isVEvent(component: ical.CalendarComponent): component is VEvent {
+  return component.type === "VEVENT";
+}
+
+function formatEvent(event: VEvent): CalendarEvent {
   return {
-    id: event.id,
-    summary: event.summary,
-    description: event.description,
-    start: event.start?.dateTime || event.start?.date || null,
-    end: event.end?.dateTime || event.end?.date || null,
-    location: event.location,
-    status: event.status,
-    htmlLink: event.htmlLink,
-    attendees:
-      event.attendees?.map((a) => ({
-        email: a.email || "",
-        responseStatus: a.responseStatus || undefined,
-      })) || [],
+    summary: event.summary || "",
+    description: event.description || "",
+    start: event.start?.toISOString() || "",
+    end: event.end?.toISOString() || "",
+    location: event.location || "",
   };
 }
 
+async function fetchAllEvents(): Promise<VEvent[]> {
+  const url = process.env.GOOGLE_CALENDAR_ICAL_URL;
+  if (!url) {
+    throw new Error(
+      "Missing GOOGLE_CALENDAR_ICAL_URL environment variable. " +
+        "Get it from Google Calendar → Settings → your calendar → Integrate calendar → Secret address in iCal format."
+    );
+  }
+
+  const data = await ical.async.fromURL(url);
+  return Object.values(data).filter(isVEvent);
+}
+
+function eventInRange(event: VEvent, start: Date, end: Date): boolean {
+  const eventStart = event.start ? new Date(event.start) : null;
+  if (!eventStart) return false;
+  return eventStart >= start && eventStart < end;
+}
+
 /**
- * List all events for today on the primary calendar.
+ * List all events for today.
  */
-export async function listTodaysEvents(
-  auth: OAuth2Client
-): Promise<CalendarEvent[]> {
-  const cal = getCalendarClient(auth);
+export async function listTodaysEvents(): Promise<CalendarEvent[]> {
+  const events = await fetchAllEvents();
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
-  const res = await cal.events.list({
-    calendarId: "primary",
-    timeMin: startOfDay.toISOString(),
-    timeMax: endOfDay.toISOString(),
-    singleEvents: true,
-    orderBy: "startTime",
-  });
-
-  return (res.data.items || []).map(formatEvent);
+  return events
+    .filter((e) => eventInRange(e, startOfDay, endOfDay))
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    .map(formatEvent);
 }
 
 /**
- * List events in a date range on the primary calendar.
+ * List events in a date range.
  */
 export async function listEvents(
-  auth: OAuth2Client,
-  timeMin: string,
-  timeMax: string,
-  maxResults?: number
+  startDate: string,
+  endDate: string
 ): Promise<CalendarEvent[]> {
-  const cal = getCalendarClient(auth);
+  const events = await fetchAllEvents();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
-  const res = await cal.events.list({
-    calendarId: "primary",
-    timeMin: new Date(timeMin).toISOString(),
-    timeMax: new Date(timeMax).toISOString(),
-    singleEvents: true,
-    orderBy: "startTime",
-    maxResults: maxResults || 50,
-  });
-
-  return (res.data.items || []).map(formatEvent);
+  return events
+    .filter((e) => eventInRange(e, start, end))
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    .map(formatEvent);
 }
 
 /**
- * Search events by keyword on the primary calendar.
+ * Search events by keyword in summary, description, or location.
  */
 export async function searchEvents(
-  auth: OAuth2Client,
   query: string,
-  timeMin?: string,
-  timeMax?: string
+  startDate?: string,
+  endDate?: string
 ): Promise<CalendarEvent[]> {
-  const cal = getCalendarClient(auth);
+  const events = await fetchAllEvents();
+  const q = query.toLowerCase();
 
-  const params: calendar_v3.Params$Resource$Events$List = {
-    calendarId: "primary",
-    q: query,
-    singleEvents: true,
-    orderBy: "startTime",
-    maxResults: 25,
-  };
-
-  if (timeMin) params.timeMin = new Date(timeMin).toISOString();
-  if (timeMax) params.timeMax = new Date(timeMax).toISOString();
-
-  // Default to upcoming events if no time range specified
-  if (!timeMin && !timeMax) {
-    params.timeMin = new Date().toISOString();
-  }
-
-  const res = await cal.events.list(params);
-  return (res.data.items || []).map(formatEvent);
-}
-
-/**
- * Create a new event on the primary calendar.
- */
-export async function createEvent(
-  auth: OAuth2Client,
-  event: {
-    summary: string;
-    description?: string;
-    startDateTime: string;
-    endDateTime: string;
-    location?: string;
-    attendees?: string[];
-  }
-): Promise<CalendarEvent> {
-  const cal = getCalendarClient(auth);
-
-  const res = await cal.events.insert({
-    calendarId: "primary",
-    requestBody: {
-      summary: event.summary,
-      description: event.description,
-      location: event.location,
-      start: { dateTime: new Date(event.startDateTime).toISOString() },
-      end: { dateTime: new Date(event.endDateTime).toISOString() },
-      attendees: event.attendees?.map((email) => ({ email })),
-    },
+  let filtered = events.filter((e) => {
+    const text = [e.summary, e.description, e.location]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return text.includes(q);
   });
 
-  return formatEvent(res.data);
+  if (startDate) {
+    const start = new Date(startDate);
+    filtered = filtered.filter(
+      (e) => e.start && new Date(e.start) >= start
+    );
+  }
+  if (endDate) {
+    const end = new Date(endDate);
+    filtered = filtered.filter(
+      (e) => e.start && new Date(e.start) < end
+    );
+  }
+
+  return filtered
+    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    .map(formatEvent);
 }
