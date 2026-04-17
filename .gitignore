@@ -1,0 +1,34 @@
+# --- Data / PHI — never commit ---
+accounts*.json
+accounts*.sql
+*_insert.sql
+update_legacy_*.sql
+logcat*.txt
+*.log
+
+# --- Scripts with inline credentials (rewrite to use env vars before committing) ---
+import_accounts.py
+
+# --- Secrets / local config ---
+.env
+.env.*
+!.env.example
+.mcp.local.json
+.claude/settings.local.json
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# --- Personal scratch (not product code) ---
+research/
