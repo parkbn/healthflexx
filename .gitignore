@@ -32,3 +32,13 @@ Thumbs.db
 
 # --- Personal scratch (not product code) ---
 research/
+tasks/
+
+# --- Applied migrations (already run against Supabase) ---
+companion_feature_migration.sql
+
+# --- Firebase local state ---
+.firebase/
+
+# --- Separate git repo (parkbn/HealthFlexx-app lives here as a sibling checkout) ---
+ios-app/
