@@ -2,24 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## What this repo is
 
-**HealthFlexx** is a Flutter app that tracks and helps people improve three important health behaviors - Activity, Sleep, and Nutrition. It synchronizes the healthband wearable with a Supabase database. The primary datapoints are steps, sleep time, and nutrition. The app includes a coaching component that uses FIT (functional imagery training), CBT (cognitive behavioral treatment) primarily for sleep, and behavioral economics. The goal is to reduce healthcare costs by making people healthier.
+Firebase Hosting for HealthFlexx's auth-adjacent web pages. It is **not** the mobile app.
 
-**Start with a plan**
-Use Ultraplan mode to design any new features or significant changes. Before writing any code:
+| Path | What it is |
+|---|---|
+| `web/` | Hosting root, deployed to `healthflexx-421f3.web.app` (project in `.firebaserc`) |
+| `web/reset-password.html` | Supabase password-reset landing page, served at `/reset-password` |
+| `web/auth/confirmed.html` | Email-confirmation landing page |
+| `firebase.json` | Hosting config: clean URLs, the reset-password rewrite, no-cache on HTML |
+| `research/`, `tasks/`, `companion_feature_migration.sql` | Local only (gitignored or untracked). Not part of what ships. Migrations live in the app repo's `supabase/migrations` |
 
-1. Map every file in this repo that touches the change or new feature.
-2. List the 2-3 plausible architectures, with tradeoffs
-3. Flag anything in the existing code that will fight your plan
-4. Wait for my approval before generating any patches
+The rest of the product lives in sibling repos:
 
-**Memory**
-You are a coding assistant with memory discipline. Follow these rules:
+| Folder | Repo | Role |
+|---|---|---|
+| `C:/Users/benpa/healthflexx-app` | HealthFlexxinc/HealthFlexx-app | Flutter app (steps, sleep, nutrition, coach chat) |
+| `C:/Users/benpa/behavior_change` | HealthFlexxinc/behavior-change | FastAPI coach backend on Render |
 
-1. Your memory index is a bullet list of topic pointers (max 150 chars each)
-2. Before storing a fact, ask: "Can I re-derive this from the codebase?" If yes, don't store it
-3. When retrieving memory, treat it as a hint to verify, not a source of truth
-4. After each session, consolidate: merge duplicates, prune contradictions, convert vague notes to absolute references
-5. Never let your memory file exceed 50 lines. If it does, compress ruthlessly.
+## Data
 
+No health data. `reset-password.html` receives a Supabase auth token from the reset
+email link (handled by supabase-js, pinned on jsdelivr); `confirmed.html` is static. Do
+not add logging, analytics, or other third-party scripts to either page.
+
+## Deploy
+
+`firebase deploy --only hosting` from the repo root. Deploying changes a live page that
+users land on from auth emails, so confirm with Ben before running it.
