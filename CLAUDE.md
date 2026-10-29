@@ -23,9 +23,9 @@ The rest of the product lives in sibling repos:
 
 ## Data
 
-No health data. These pages receive Supabase auth tokens from email links (handled by
-supabase-js, pinned on jsdelivr); do not add logging, analytics, or other third-party
-scripts that could read them.
+No health data. `reset-password.html` receives a Supabase auth token from the reset
+email link (handled by supabase-js, pinned on jsdelivr); `confirmed.html` is static. Do
+not add logging, analytics, or other third-party scripts to either page.
 
 ## Deploy
 
