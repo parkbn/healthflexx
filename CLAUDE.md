@@ -12,7 +12,7 @@ Firebase Hosting for HealthFlexx's auth-adjacent web pages. It is **not** the mo
 | `web/reset-password.html` | Supabase password-reset landing page, served at `/reset-password` |
 | `web/auth/confirmed.html` | Email-confirmation landing page |
 | `firebase.json` | Hosting config: clean URLs, the reset-password rewrite, no-cache on HTML |
-| `research/`, `tasks/`, `companion_feature_migration.sql` | Local only (gitignored or untracked). Not part of what ships. Migrations live in the app repo's `supabase/migrations` |
+| `research/`, `companion_feature_migration.sql` | Local only (gitignored or untracked). Not part of what ships. Migrations live in the app repo's `supabase/migrations` |
 
 The rest of the product lives in sibling repos:
 
